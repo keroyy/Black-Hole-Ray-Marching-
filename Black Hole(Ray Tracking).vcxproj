@@ -24,7 +24,7 @@
     <ProjectGuid>{b19b5faa-9b02-41f7-b657-e81e20ee9805}</ProjectGuid>
     <RootNamespace>BlackHoleRayTracking</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>Ray Tracking</ProjectName>
+    <ProjectName>Ray Marching</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -148,8 +148,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="blackhole.frag" />
-    <None Include="rayTracking.frag" />
-    <None Include="rayTracking.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />

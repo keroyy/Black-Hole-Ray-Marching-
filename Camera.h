@@ -105,6 +105,38 @@ public:
         this->updateCameraVectors();
     }
 
+    // Rotate AxisY
+    void RotateAxisY(GLfloat theta)
+    {
+        //theta *= this->MouseSensitivity;
+        theta *= 0.1;
+
+        glm::mat4 rotate = this->RotateAxis(glm::vec3(0.0, 1.0, 0.0), theta);
+        glm::mat4 def = this->RotateAxis(glm::vec3(0.0, 1.0, 0.0), theta);
+
+        this->Position = glm::vec3(rotate * glm::vec4(this->Position, 1.0));
+        this->Front = glm::vec3(rotate * glm::vec4(this->Front, 1.0));
+
+        // Update Front, Right and Up Vectors using the updated Eular angles
+        //this->updateCameraVectors();
+    }
+    
+    // Rotate AxisX
+    void RotateAxisX(GLfloat alpha)
+    {
+        //alpha *= this->MouseSensitivity;
+        alpha *= -0.1;
+
+        glm::mat4 rotate = this->RotateAxis(glm::vec3(1.0, 0.0, 0.0), alpha);
+        glm::mat4 def = this->RotateAxis(glm::vec3(1.0, 0.0, 0.0), alpha);
+
+        this->Position = glm::vec3(rotate * glm::vec4(this->Position, 1.0));
+        this->Front = glm::vec3(rotate * glm::vec4(this->Front, 1.0));
+
+        // Update Front, Right and Up Vectors using the updated Eular angles
+        //this->updateCameraVectors();
+    }
+
     // Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
     void ProcessMouseScroll(GLfloat yoffset)
     {
@@ -129,5 +161,21 @@ private:
         // Also re-calculate the Right and Up vector
         this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
         this->Up = glm::normalize(glm::cross(this->Right, this->Front));
+    }
+
+    // Rotate any Axis
+    glm::mat4 RotateAxis(glm::vec3 axis, GLfloat theta)
+    {
+        glm::vec3 a = axis;
+        GLfloat c = cos(theta), s = sin(theta), p = 1 - cos(theta);
+
+        // Move camera
+        glm::mat4 rotate;
+        rotate[0][0] = c + pow(a.x, 2) * p; rotate[0][1] = a.x * a.y * p - a.z * s; rotate[0][2] = a.x * a.z * p + a.y * s; rotate[0][3] = 0.0f;
+        rotate[1][0] = a.y * a.x * p + a.z * s; rotate[1][1] = c + pow(a.y, 2) * p; rotate[1][2] = a.y * a.z * p - a.x * s; rotate[1][3] = 0.0f;
+        rotate[2][0] = a.z * a.x * p - a.y * s; rotate[2][1] = a.z * a.y * p + a.x * s; rotate[2][2] = c + pow(a.z, 2) * p; rotate[2][3] = 0.0f;
+        rotate[3][0] = 0.0f; rotate[3][1] = 0.0f; rotate[3][2] = 0.0f; rotate[3][3] = 1.0f;
+
+        return rotate;
     }
 };

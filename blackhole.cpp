@@ -31,10 +31,10 @@ GLuint loadCubemap(vector<const GLchar*> faces);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void Do_Movement();
+//void Do_Movement();
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 0.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 18.0f));
 bool keys[1024];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
@@ -61,7 +61,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // Options
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // Initialize GLEW to setup the OpenGL Function pointers
     glewExperimental = GL_TRUE;
@@ -247,7 +247,7 @@ int main()
 
         // Check and call events
         glfwPollEvents();
-        Do_Movement();
+        //Do_Movement();
 
         // Clear the colorbuffer
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -323,11 +323,11 @@ int main()
         glBindVertexArray(0);
         //glDepthMask(GL_TRUE);
 
-        glUniform1f(glGetUniformLocation(rayTrackingShader.Program, "time"), (GLfloat)glfwGetTime() * 0.07f);
+        glUniform1f(glGetUniformLocation(rayTrackingShader.Program, "time"), (GLfloat)glfwGetTime() * 0.05f);
         glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.lower_left_corner"), lower_left_corner.x, lower_left_corner.y, lower_left_corner.z);
         glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.horizontal"), horizontal.x, horizontal.y, horizontal.z);
         glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.vertical"), vertical.x, vertical.y, vertical.z);
-        glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.origin"), 0.0, 0.0, 0.0);
+        glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.origin"), camera.Position.x, camera.Position.y, camera.Position.z);
         
 
         glBindVertexArray(rayVAO);
@@ -428,12 +428,20 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     lastX = xpos;
     lastY = ypos;
 
-    camera.ProcessMouseMovement(xoffset, yoffset);
+    //camera.ProcessMouseMovement(xoffset, yoffset);
+    
+    float theta = 2 * PI * ( (GLfloat)xoffset / screenWidth );
+    float alpha = 2 * PI * ( (GLfloat)yoffset / screenHeight );
+
+    //camera.RotateAxisY(theta);
+    //camera.RotateAxisX(alpha);
+
+    
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    camera.ProcessMouseScroll(yoffset);
+    //camera.ProcessMouseScroll(yoffset);
 }
 
 #pragma endregion

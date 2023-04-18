@@ -23,12 +23,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="rayTracking.vs">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="rayTracking.frag">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="blackhole.frag">
       <Filter>资源文件</Filter>
     </None>

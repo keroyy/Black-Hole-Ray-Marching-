@@ -15,6 +15,7 @@ struct Camera {// 摄像机
 };
 uniform Camera camera;
 uniform mat4 view;
+uniform mat4 projection;
 uniform mat4 rotate;
 uniform samplerCube skybox;
 uniform float time;
@@ -31,10 +32,6 @@ Ray CreateRay(vec3 o, vec3 d){
     ray.direction = d;
 
     return ray;
-};
-
-vec3 GetRayLocation(Ray ray, float t){
-    return ray.origin + t * ray.direction;
 };
 
 // 球体
@@ -80,41 +77,55 @@ vec3 rotateVec3(vec3 v, vec3 axis, float theta){
     return vec3(rotate * v1);
 }
 
-float GetDist(vec3 p)
-{
-    Sphere s = CreateSphere(vec3(0, 0, -6), 0.2);
-
-    float d = length(p-s.center)-s.radius;// P点到球面的距离
-    
-    return d;
-}
-
+// 事件视界 
 // Signed Distance Field，中文名为有向距离场。SDF函数描述了一个图形的区域，我们习惯性地设置它的规则是点在图形内部则返回负值，点在图形外部返回正值
-float eventHorizon(vec3 pPosition)
+float eventHorizon(vec3 pos)
 {
-    return length(pPosition) - 1;
+    return length(pos) - 1; // 史瓦西半径
 }
 
-// 施瓦西度规 粒子运动轨迹计算
-vec3 gravitationalLensing(float H2, vec3 pPosition)
+// 施瓦西度规 粒子运动轨迹计算(史瓦西半径为1的情况下)
+vec3 gravitationalLensing(float H2, vec3 pos)
 {
-    float r2 = dot(pPosition, pPosition);
+    float r2 = dot(pos, pos);
     float r5 = pow(r2, 2.5);
-    return -1.5 * H2 * pPosition / r5;
+    return -1.5 * H2 * pos / r5;
+}
+
+// 吸积盘
+vec3 accrectionDisk(vec3 pos)
+{
+    const float MIN_WIDTH = 2.6; // 由于引力透镜效应，黑色边缘其实是事件视界的一个投影，它的半径刚好是2.6倍的史瓦西半径
+
+    float r = length(pos);
+
+    vec3 disk = vec3(8, 0.1, 8); // 视作一个压扁的球
+    if (length(pos / disk) > 1)
+    {
+        return vec3(0, 0, 0);
+    }
+    float temperature = max(0, 1 - length(pos / disk));
+    temperature *= (r - MIN_WIDTH) / (8 - MIN_WIDTH);
+    // 坐标转换为球极坐标系
+    float t = radians(atan(pos.z, pos.x)); // θ
+    float p = asin(pos.y / r); // φ
+    vec3 sphericalCoord = vec3(r, t, p);
+
+    vec3 color = vec3(0, 1, 0);
+    return temperature * color;
+
 }
 
 // TODO:test
 vec3 RayMarching(Ray ray)
 {
     vec3 color = vec3(0.);
-    float t = 0.1;
-    vec3 pos = vec3(0.);
-    vec3 dir = ray.direction;
-    vec3 h = cross(pos, dir);
-    float h2 = dot(h, h);
+    float STEP_SIZE = 0.1;
+    vec3 pos = ray.origin;
+    vec3 dir = ray.direction * STEP_SIZE;
 
-    vec3 worldPos = vec3(inverse(view) * vec4(pos, 1.0));
-    vec3 worldDir = vec3(inverse(view) * vec4(dir, 1.0));
+    vec3 h = cross(pos, dir); // 面积常数
+    float h2 = dot(h, h);
 
     for(int i = 0; i < Max_Steps; i++)
     {
@@ -123,77 +134,35 @@ vec3 RayMarching(Ray ray)
         //ray.origin = pos;
 
         // 事件视界
-        if (eventHorizon(worldPos) < 0.0)
+        if (eventHorizon(pos) < 0.0)
         {
             return color;
         }
 
+        // 吸积盘
+        color += accrectionDisk(pos);
+
         // 引力透镜
-        vec3 offset = gravitationalLensing(h2, worldPos);
-        worldDir += offset;
+        vec3 offset = gravitationalLensing(h2, pos);
+        dir += offset;
 
         // 步进
-        worldPos += worldDir;
+        pos += dir;
     }
     // sample skybox
-    //vec3 worldDir = vec3(inverse(view) * vec4(dir, 1.0));
-    vec3 normalizeDir = normalize(worldDir.xyz);
-    normalizeDir = rotateVec3(normalizeDir, vec3(0, 1, 0), time);
-    color = vec3(texture(skybox, normalizeDir));
+    dir = rotateVec3(dir, vec3(0, 1, 0), time);
+    color += vec3(texture(skybox, dir));
                      
     return color;    
 }
 
-vec3 RayMarch(Ray ray){
-    vec3 color = vec3(0.);
-    float d0 = 0.;
-    for(int i = 0; i < Max_Steps; i++)
-    {
-        vec3 p = ray.origin + ray.direction * d0;
-        float ds = GetDist(p);
-        d0 += ds;
-        if(d0 > Max_Dist) {
-            // sample skybox
-            vec3 worldDir = vec3(inverse(view) * vec4(ray.direction, 1.0));
-            vec3 normalizeDir = normalize(worldDir.xyz);
-            normalizeDir = rotateVec3(normalizeDir, vec3(0, 1, 0), time);
-            color = vec3(texture(skybox, normalizeDir));
-            break;
-        } 
-        if(d0 < Surf_Dist) {
-            break;
-        }        
-    }
-                     
-    return color;     
-}
-
-vec3 RayTrace(Ray ray){
-    vec3 color = vec3(0.0);
-    float alpha = 1.0;
-     
-    Sphere s = CreateSphere(vec3(0, 0, -6), 0.1);
-    if (SphereHit(s, ray)){
-        return color;
-    }
-    
-    // skybox color
-    vec3 worldDir = vec3(inverse(view) * vec4(ray.direction, 1.0));
-    vec3 normalizeDir = normalize(worldDir.xyz);
-    normalizeDir = rotateVec3(normalizeDir, vec3(0, 1, 0), time);
-    color = vec3(texture(skybox, normalizeDir));
-    return color;
-}
-
 void main(){
-    float u = screenCoord.x;
-    float v = screenCoord.y;
+    float u = screenCoord.x * 2.0f - 1.0f;
+    float v = screenCoord.y * 2.0f - 1.0f;
 
-    //vec3 dir = normalize(vec3(camera.lower_left_corner + u * camera.horizontal + v * camera.vertical - camera.origin));
-    //dir = vec3(inverse(view) * vec4(dir, 1.0));
-    //vec3 camPos = vec3(inverse(view) * vec4(camera.origin, 1.0));// world space
+    vec3 dir = normalize(vec3(inverse(view) * inverse(projection) * vec4(u, v, 0, 1)));
 
-    Ray ray = CreateRay(camera.origin, camera.lower_left_corner + u * camera.horizontal + v * camera.vertical - camera.origin);
-    //FragColor = vec4(RayTrace(ray), 1.0);
+    Ray ray = CreateRay(camera.origin, dir);
+
     FragColor = vec4(RayMarching(ray), 1.0);
 }
