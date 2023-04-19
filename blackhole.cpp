@@ -22,7 +22,7 @@
 #include "Camera.h"
 
 // Properties
-GLuint screenWidth = 1600, screenHeight = 900;
+GLuint screenWidth = 1920, screenHeight = 1080;
 const float PI = 3.1415926;
 
 GLuint loadCubemap(vector<const GLchar*> faces);
@@ -34,7 +34,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 //void Do_Movement();
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 18.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 15.0f));
 bool keys[1024];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
@@ -61,7 +61,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // Options
-    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // Initialize GLEW to setup the OpenGL Function pointers
     glewExperimental = GL_TRUE;
@@ -76,7 +76,7 @@ int main()
     // Setup and compile our shaders
     //Shader shader("myShader.vs", "myShader.frag");
     //Shader skyboxShader("skybox.vs", "skybox.frag");
-    Shader rayTrackingShader("blackhole.vs", "blackhole.frag");
+    Shader blackHoleShader("blackhole.vs", "blackhole.frag");
 
 #pragma region "object_initialization"
     // Set the object data (buffers, vertex attributes)
@@ -284,7 +284,7 @@ int main()
         //glBindVertexArray(0);
 
         // ray tracking
-        rayTrackingShader.Use();
+        blackHoleShader.Use();
 
         // Initialize matrix
         glm::mat4 model = glm::mat4(1.0f);
@@ -300,34 +300,31 @@ int main()
         GLfloat aspect = (GLfloat)screenWidth / (GLfloat)screenHeight;
         GLfloat near = 1.0f;
         GLfloat far = 100.0f;
-        /*horizontal = glm::vec3(2 * ((far - near) / 2 + near) * tan(camera.Zoom / 2), 0.0, 0.0);
-        vertical = glm::vec3(0.0, aspect * horizontal.x, 0.0);
-        lower_left_corner = glm::vec3(-horizontal.x / 2, -vertical.y / 2, -((far - near) / 2 + near));*/
-        horizontal = glm::vec3(2 * near * tan(camera.Zoom / 2), 0.0, 0.0);
+        /*horizontal = glm::vec3(2 * near * tan(camera.Zoom / 2), 0.0, 0.0);
         vertical = glm::vec3(0.0, (1 / aspect) * horizontal.x, 0.0);
-        lower_left_corner = glm::vec3(-horizontal.x / 2, -vertical.y / 2, -near);
+        lower_left_corner = glm::vec3(-horizontal.x / 2, -vertical.y / 2, -near);*/
 
         // glDepthMask(GL_FALSE);// Remember to turn depth writing off
         view = glm::mat4(glm::mat3(camera.GetViewMatrix()));	// Remove any translation component of the view matrix
         projection = glm::perspective(camera.Zoom, aspect, near, far);
         //ratote = glm::rotate(ratote, (GLfloat)glfwGetTime() * 0.1f, glm::vec3(0.0f, 1.0f, 0.0f));    // rotate skybox
-        glUniformMatrix4fv(glGetUniformLocation(rayTrackingShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(rayTrackingShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(glGetUniformLocation(blackHoleShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(glGetUniformLocation(blackHoleShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
         //glUniformMatrix4fv(glGetUniformLocation(rayTrackingShader.Program, "ratote"), 1, GL_FALSE, glm::value_ptr(ratote));
         // skybox cube
         glBindVertexArray(skyboxVAO);
         glActiveTexture(GL_TEXTURE0);
-        glUniform1i(glGetUniformLocation(rayTrackingShader.Program, "skybox"), 0);
+        glUniform1i(glGetUniformLocation(blackHoleShader.Program, "skybox"), 0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
         //glDepthMask(GL_TRUE);
 
-        glUniform1f(glGetUniformLocation(rayTrackingShader.Program, "time"), (GLfloat)glfwGetTime() * 0.05f);
-        glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.lower_left_corner"), lower_left_corner.x, lower_left_corner.y, lower_left_corner.z);
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "time"), (GLfloat)glfwGetTime() * 0.03f);
+        /*glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.lower_left_corner"), lower_left_corner.x, lower_left_corner.y, lower_left_corner.z);
         glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.horizontal"), horizontal.x, horizontal.y, horizontal.z);
-        glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.vertical"), vertical.x, vertical.y, vertical.z);
-        glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.origin"), camera.Position.x, camera.Position.y, camera.Position.z);
+        glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.vertical"), vertical.x, vertical.y, vertical.z);*/
+        glUniform3f(glGetUniformLocation(blackHoleShader.Program, "cameraPos"), camera.Position.x, camera.Position.y, camera.Position.z);
         
 
         glBindVertexArray(rayVAO);
@@ -433,8 +430,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     float theta = 2 * PI * ( (GLfloat)xoffset / screenWidth );
     float alpha = 2 * PI * ( (GLfloat)yoffset / screenHeight );
 
-    //camera.RotateAxisY(theta);
-    //camera.RotateAxisX(alpha);
+    camera.RotateAxisY(theta);
+    camera.RotateAxisX(alpha);
 
     
 }

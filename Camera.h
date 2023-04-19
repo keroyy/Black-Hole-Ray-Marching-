@@ -109,7 +109,7 @@ public:
     void RotateAxisY(GLfloat theta)
     {
         //theta *= this->MouseSensitivity;
-        theta *= 0.1;
+        theta *= 0.3;
 
         glm::mat4 rotate = this->RotateAxis(glm::vec3(0.0, 1.0, 0.0), theta);
         glm::mat4 def = this->RotateAxis(glm::vec3(0.0, 1.0, 0.0), theta);
@@ -125,7 +125,7 @@ public:
     void RotateAxisX(GLfloat alpha)
     {
         //alpha *= this->MouseSensitivity;
-        alpha *= -0.1;
+        alpha *= -0.2;
 
         glm::mat4 rotate = this->RotateAxis(glm::vec3(1.0, 0.0, 0.0), alpha);
         glm::mat4 def = this->RotateAxis(glm::vec3(1.0, 0.0, 0.0), alpha);

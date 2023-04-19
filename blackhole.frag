@@ -7,13 +7,7 @@ in vec2 screenCoord;
 
 out vec4 FragColor;
 
-struct Camera {// 摄像机
-    vec3 lower_left_corner; // 左下角
-    vec3 horizontal; // 水平
-    vec3 vertical; // 垂直
-    vec3 origin; 
-};
-uniform Camera camera;
+uniform vec3 cameraPos;
 uniform mat4 view;
 uniform mat4 projection;
 uniform mat4 rotate;
@@ -33,33 +27,6 @@ Ray CreateRay(vec3 o, vec3 d){
 
     return ray;
 };
-
-// 球体
-struct Sphere{
-    vec3 center;
-    float radius;
-}; 
-
-Sphere CreateSphere(vec3 center, float radius){
-	Sphere sphere;
-
-	sphere.center = center;
-	sphere.radius = radius;
-
-	return sphere;
-}
-
-bool SphereHit(Sphere sphere, Ray ray){
-	vec3 oc = ray.origin - sphere.center;
-	
-	float a = dot(ray.direction, ray.direction);
-	float b = 2.0 * dot(oc, ray.direction);
-	float c = dot(oc, oc) - sphere.radius * sphere.radius;
-
-	float delta = b * b - 4 * a * c;
-
-	return delta > 0.0;
-}
 
 vec3 rotateVec3(vec3 v, vec3 axis, float theta){
     vec4 v1 = vec4(v, 1.0);
@@ -99,13 +66,15 @@ vec3 accrectionDisk(vec3 pos)
 
     float r = length(pos);
 
-    vec3 disk = vec3(8, 0.1, 8); // 视作一个压扁的球
+    float accretionDiskWidth = 11;
+
+    vec3 disk = vec3(accretionDiskWidth, 0.2, accretionDiskWidth); // 视作一个很扁的椭球形
     if (length(pos / disk) > 1)
     {
         return vec3(0, 0, 0);
     }
     float temperature = max(0, 1 - length(pos / disk));
-    temperature *= (r - MIN_WIDTH) / (8 - MIN_WIDTH);
+    temperature *= (r - MIN_WIDTH) / (accretionDiskWidth - MIN_WIDTH);
     // 坐标转换为球极坐标系
     float t = radians(atan(pos.z, pos.x)); // θ
     float p = asin(pos.y / r); // φ
@@ -162,7 +131,7 @@ void main(){
 
     vec3 dir = normalize(vec3(inverse(view) * inverse(projection) * vec4(u, v, 0, 1)));
 
-    Ray ray = CreateRay(camera.origin, dir);
+    Ray ray = CreateRay(cameraPos, dir);
 
     FragColor = vec4(RayMarching(ray), 1.0);
 }
