@@ -26,6 +26,7 @@ GLuint screenWidth = 1920, screenHeight = 1080;
 const float PI = 3.1415926;
 
 GLuint loadCubemap(vector<const GLchar*> faces);
+GLuint loadTexture(const GLchar* path);
 
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -235,6 +236,9 @@ int main()
     faces.push_back("resources/skybox/back.png");
     GLuint cubemapTexture = loadCubemap(faces);
 
+    // colorMap
+    GLuint colorMapTexture = loadTexture("resources/Noise/color_map.png");
+
 #pragma endregion
 
     // Game loop
@@ -326,6 +330,10 @@ int main()
         glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.vertical"), vertical.x, vertical.y, vertical.z);*/
         glUniform3f(glGetUniformLocation(blackHoleShader.Program, "cameraPos"), camera.Position.x, camera.Position.y, camera.Position.z);
         
+        // noise texture
+        glActiveTexture(GL_TEXTURE1);
+        glUniform1i(glGetUniformLocation(blackHoleShader.Program, "colorMap"), 1);
+        glBindTexture(GL_TEXTURE_2D, colorMapTexture);
 
         glBindVertexArray(rayVAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -378,6 +386,33 @@ GLuint loadCubemap(vector<const GLchar*> faces)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+    return textureID;
+}
+
+GLuint loadTexture(const GLchar* path)
+{
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height;
+    unsigned char* data = SOIL_load_image(path, &width, &height, 0, SOIL_LOAD_RGB);
+    if (data)
+    {
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+    }
 
     return textureID;
 }
