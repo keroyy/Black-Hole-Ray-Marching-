@@ -32,7 +32,7 @@ GLuint loadTexture(const GLchar* path);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-//void Do_Movement();
+void Do_Movement();
 
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 15.0f));
@@ -128,27 +128,27 @@ int main()
          1.0f, -1.0f,  1.0f
     };
 
-    // sphere
-    const float r = 0.8f;
-    const int stacks = 50, sectors = 2 * stacks;
-    vector<float>vertices;
-    vector<int>indices;
+    //// sphere
+    //const float r = 0.8f;
+    //const int stacks = 50, sectors = 2 * stacks;
+    //vector<float>vertices;
+    //vector<int>indices;
 
-    for (int j = 0; j <= stacks; j++) {
-        float v = (float)j / stacks;
-        float phi = PI * v;
+    //for (int j = 0; j <= stacks; j++) {
+    //    float v = (float)j / stacks;
+    //    float phi = PI * v;
 
-        for (int i = 0; i <= sectors; i++) {
-            float u = (float)i / sectors;
-            float theta = 2 * PI * u;
+    //    for (int i = 0; i <= sectors; i++) {
+    //        float u = (float)i / sectors;
+    //        float theta = 2 * PI * u;
 
-            vertices.push_back(r * sin(phi) * cos(theta));
-            vertices.push_back(r * sin(phi) * sin(theta));
-            vertices.push_back(r * cos(phi));
-        }
-    }
+    //        vertices.push_back(r * sin(phi) * cos(theta));
+    //        vertices.push_back(r * sin(phi) * sin(theta));
+    //        vertices.push_back(r * cos(phi));
+    //    }
+    //}
 
-    for (int j = 0; j < stacks; j++) {
+    /*for (int j = 0; j < stacks; j++) {
         int k1 = j * (sectors + 1);
         int k2 = k1 + sectors + 1;
 
@@ -164,7 +164,7 @@ int main()
                 indices.push_back(k2 + 1);
             }
         }
-    }
+    }*/
 
     // rectangle
     float rectangleVertices[] = {
@@ -177,22 +177,6 @@ int main()
         0, 3, 1,   // first triangle
         1, 3, 2    // second triangle
     };
-
-    // Setup sphere VAO
-    GLuint VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    // Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointer(s).
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), &indices[0], GL_STATIC_DRAW);
-    // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0); // Unbind VAO
 
     // Setup skybox VAO
     GLuint skyboxVAO, skyboxVBO;
@@ -256,37 +240,6 @@ int main()
         // Clear the colorbuffer
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // Draw skybox first
-        //glDepthMask(GL_FALSE);// Remember to turn depth writing off
-        //skyboxShader.Use();
-        //view = glm::mat4(glm::mat3(camera.GetViewMatrix()));	// Remove any translation component of the view matrix
-        //projection = glm::perspective(camera.Zoom, (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
-        //ratote = glm::rotate(ratote, (GLfloat)glfwGetTime() * 0.1f, glm::vec3(0.0f, 1.0f, 0.0f));    // rotate skybox
-        //glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        //glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-        //glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "ratote"), 1, GL_FALSE, glm::value_ptr(ratote));
-        //// skybox cube
-        //glBindVertexArray(skyboxVAO);
-        //glActiveTexture(GL_TEXTURE0);
-        //glUniform1i(glGetUniformLocation(rayTrackingShader.Program, "skybox"), 0);
-        //glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        //glDrawArrays(GL_TRIANGLES, 0, 36);
-        //glBindVertexArray(0);
-        //glDepthMask(GL_TRUE);
-
-        //// Then draw scene as normal
-        //shader.Use();
-        //view = camera.GetViewMatrix();
-        //projection = glm::perspective(camera.Zoom, (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
-        //glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        //glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-        //glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        //// sphere
-        //glBindVertexArray(VAO);
-        //glDrawElements(GL_TRIANGLES, stacks * sectors * 6, GL_UNSIGNED_INT, 0);
-        //glBindVertexArray(0);
-
         // ray tracking
         blackHoleShader.Use();
 
@@ -315,14 +268,6 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(blackHoleShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(glGetUniformLocation(blackHoleShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
         //glUniformMatrix4fv(glGetUniformLocation(rayTrackingShader.Program, "ratote"), 1, GL_FALSE, glm::value_ptr(ratote));
-        // skybox cube
-        glBindVertexArray(skyboxVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glUniform1i(glGetUniformLocation(blackHoleShader.Program, "skybox"), 0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-        //glDepthMask(GL_TRUE);
 
         glUniform1f(glGetUniformLocation(blackHoleShader.Program, "time"), (GLfloat)glfwGetTime() * 0.03f);
         /*glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.lower_left_corner"), lower_left_corner.x, lower_left_corner.y, lower_left_corner.z);
@@ -330,6 +275,10 @@ int main()
         glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.vertical"), vertical.x, vertical.y, vertical.z);*/
         glUniform3f(glGetUniformLocation(blackHoleShader.Program, "cameraPos"), camera.Position.x, camera.Position.y, camera.Position.z);
         
+        // skybox cubeTexture
+        glActiveTexture(GL_TEXTURE0);
+        glUniform1i(glGetUniformLocation(blackHoleShader.Program, "skybox"), 0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
         // noise texture
         glActiveTexture(GL_TEXTURE1);
         glUniform1i(glGetUniformLocation(blackHoleShader.Program, "colorMap"), 1);
@@ -344,9 +293,6 @@ int main()
     }
 
     // Clean up
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVBO);
     glDeleteVertexArrays(1, &rayVAO);

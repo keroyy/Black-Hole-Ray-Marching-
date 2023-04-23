@@ -152,12 +152,12 @@ void accrectionDisk(vec3 pos, inout vec3 color)
 
     float adiskParticle = 1.0; // 1.0
     float adiskHeight = 0.5; // 0.2
-    float adiskLit = 1.8; // 0.01
+    float adiskLit = 0.1; // 0.01
     float adiskDensityV = 2.0; // 1.0
     float adiskDensityH = 3.0; // 1.0
     float adiskNoiseScale = 0.8; // 1.0
     float adiskNoiseLOD = 5.0; // 5.0
-    float adiskSpeed = 5;
+    float adiskSpeed = 10;
 
     vec3 disk = vec3(outerRadius, adiskHeight, outerRadius); // 视作一个很扁的椭球形
 
