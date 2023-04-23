@@ -128,44 +128,6 @@ int main()
          1.0f, -1.0f,  1.0f
     };
 
-    //// sphere
-    //const float r = 0.8f;
-    //const int stacks = 50, sectors = 2 * stacks;
-    //vector<float>vertices;
-    //vector<int>indices;
-
-    //for (int j = 0; j <= stacks; j++) {
-    //    float v = (float)j / stacks;
-    //    float phi = PI * v;
-
-    //    for (int i = 0; i <= sectors; i++) {
-    //        float u = (float)i / sectors;
-    //        float theta = 2 * PI * u;
-
-    //        vertices.push_back(r * sin(phi) * cos(theta));
-    //        vertices.push_back(r * sin(phi) * sin(theta));
-    //        vertices.push_back(r * cos(phi));
-    //    }
-    //}
-
-    /*for (int j = 0; j < stacks; j++) {
-        int k1 = j * (sectors + 1);
-        int k2 = k1 + sectors + 1;
-
-        for (int i = 0; i < sectors; i++, k1++, k2++) {
-            if (j != 0) {
-                indices.push_back(k1);
-                indices.push_back(k1 + 1);
-                indices.push_back(k2);
-            }
-            if (j != stacks - 1) {
-                indices.push_back(k2);
-                indices.push_back(k1 + 1);
-                indices.push_back(k2 + 1);
-            }
-        }
-    }*/
-
     // rectangle
     float rectangleVertices[] = {
              1.0f,  1.0f, 0.0f,  // top right
@@ -257,22 +219,14 @@ int main()
         GLfloat aspect = (GLfloat)screenWidth / (GLfloat)screenHeight;
         GLfloat near = 1.0f;
         GLfloat far = 100.0f;
-        /*horizontal = glm::vec3(2 * near * tan(camera.Zoom / 2), 0.0, 0.0);
-        vertical = glm::vec3(0.0, (1 / aspect) * horizontal.x, 0.0);
-        lower_left_corner = glm::vec3(-horizontal.x / 2, -vertical.y / 2, -near);*/
 
         // glDepthMask(GL_FALSE);// Remember to turn depth writing off
         view = glm::mat4(glm::mat3(camera.GetViewMatrix()));	// Remove any translation component of the view matrix
         projection = glm::perspective(camera.Zoom, aspect, near, far);
-        //ratote = glm::rotate(ratote, (GLfloat)glfwGetTime() * 0.1f, glm::vec3(0.0f, 1.0f, 0.0f));    // rotate skybox
         glUniformMatrix4fv(glGetUniformLocation(blackHoleShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(glGetUniformLocation(blackHoleShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-        //glUniformMatrix4fv(glGetUniformLocation(rayTrackingShader.Program, "ratote"), 1, GL_FALSE, glm::value_ptr(ratote));
 
         glUniform1f(glGetUniformLocation(blackHoleShader.Program, "time"), (GLfloat)glfwGetTime() * 0.03f);
-        /*glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.lower_left_corner"), lower_left_corner.x, lower_left_corner.y, lower_left_corner.z);
-        glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.horizontal"), horizontal.x, horizontal.y, horizontal.z);
-        glUniform3f(glGetUniformLocation(rayTrackingShader.Program, "camera.vertical"), vertical.x, vertical.y, vertical.z);*/
         glUniform3f(glGetUniformLocation(blackHoleShader.Program, "cameraPos"), camera.Position.x, camera.Position.y, camera.Position.z);
         
         // skybox cubeTexture
