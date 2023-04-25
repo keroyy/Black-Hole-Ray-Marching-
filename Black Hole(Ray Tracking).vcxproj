@@ -148,6 +148,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="blackhole.frag" />
+    <None Include="bloom.frag" />
+    <None Include="blur.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />

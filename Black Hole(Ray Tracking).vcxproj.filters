@@ -26,6 +26,12 @@
     <None Include="blackhole.frag">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="blur.frag">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="bloom.frag">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">

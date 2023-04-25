@@ -43,6 +43,9 @@ bool firstMouse = true;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
+bool bloom = true;
+bool bloomKeyPressed = false;
+
 // The MAIN function, from here we start our application and run our Game loop
 int main()
 {
@@ -69,15 +72,15 @@ int main()
     glewInit();
 
     // Define the viewport dimensions
-    glViewport(0, 0, screenWidth, screenHeight);
+    glViewport(0, 0, screenWidth, screenHeight); 
 
     // Setup some OpenGL options
     glEnable(GL_DEPTH_TEST);
 
     // Setup and compile our shaders
-    //Shader shader("myShader.vs", "myShader.frag");
-    //Shader skyboxShader("skybox.vs", "skybox.frag");
     Shader blackHoleShader("blackhole.vs", "blackhole.frag");
+    Shader blurShader("blackhole.vs", "blur.frag");
+    Shader bloomShader("blackhole.vs", "bloom.frag");
 
 #pragma region "object_initialization"
     // Set the object data (buffers, vertex attributes)
@@ -185,6 +188,59 @@ int main()
     // colorMap
     GLuint colorMapTexture = loadTexture("resources/Noise/color_map.png");
 
+    // configure (floating point) framebuffers
+    // ---------------------------------------
+    GLuint hdrFBO;
+    glGenFramebuffers(1, &hdrFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+    GLuint colorBuffers[2];
+    glGenTextures(2, colorBuffers);
+    for (GLuint i = 0; i < 2; i++)
+    {
+        glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL
+        );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // attach texture to framebuffer
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0
+        );
+    }
+    GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers(2, attachments);
+
+    // ping-pong-framebuffer for blurring
+    unsigned int pingpongFBO[2];
+    unsigned int pingpongColorbuffers[2];
+    glGenFramebuffers(2, pingpongFBO);
+    glGenTextures(2, pingpongColorbuffers);
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
+        // also check if framebuffers are complete (no need for depth buffer)
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cout << "Framebuffer not complete!" << std::endl;
+    }
+
+    // shader configuration
+    // --------------------
+    blurShader.Use();
+    glUniform1i(glGetUniformLocation(blurShader.Program, "image"), 0);
+    bloomShader.Use();
+    glUniform1i(glGetUniformLocation(bloomShader.Program, "scene"), 0);
+    glUniform1i(glGetUniformLocation(bloomShader.Program, "bloomBlur"), 1);
+
 #pragma endregion
 
     // Game loop
@@ -202,19 +258,19 @@ int main()
         // Clear the colorbuffer
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // ray tracking
+
+        // 1.render scene into floating point framebuffer
+        // ---------------------------------------------
+        glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Ray marching
         blackHoleShader.Use();
 
         // Initialize matrix
         glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
-
-        // TODO:test
-        // Camera property
-        glm::vec3 lower_left_corner = glm::vec3(0.0f);// 左下角
-        glm::vec3 horizontal = glm::vec3(0.0f);// 水平
-        glm::vec3 vertical = glm::vec3(0.0f);// 垂直
 
         GLfloat aspect = (GLfloat)screenWidth / (GLfloat)screenHeight;
         GLfloat near = 1.0f;
@@ -241,6 +297,46 @@ int main()
         glBindVertexArray(rayVAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        // 2. blur bright fragments with two-pass Gaussian Blur 
+        // --------------------------------------------------
+        GLboolean horizontal = true, first_iteration = true;
+        GLuint amount = 10;
+        blurShader.Use();
+        for (GLuint i = 0; i < amount; i++)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+            glUniform1i(glGetUniformLocation(blurShader.Program, "horizontal"), horizontal);
+            glBindTexture(
+                GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]
+            );
+
+            glBindVertexArray(rayVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glBindVertexArray(0);
+
+            horizontal = !horizontal;
+            if (first_iteration)
+                first_iteration = false;
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
+        // --------------------------------------------------------------------------------------------------------------------------
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        bloomShader.Use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+        glUniform1i(glGetUniformLocation(bloomShader.Program, "bloom"), bloom);
+
+        glBindVertexArray(rayVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
 
         // Swap the buffers
         glfwSwapBuffers(window);
@@ -343,6 +439,15 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         keys[key] = true;
     else if (action == GLFW_RELEASE)
         keys[key] = false;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !bloomKeyPressed)
+    {
+        bloom = !bloom;
+        bloomKeyPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE)
+    {
+        bloomKeyPressed = false;
+    }
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)

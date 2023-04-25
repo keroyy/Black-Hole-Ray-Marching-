@@ -1,9 +1,12 @@
 #version 330 core
 #define Max_Steps 300    // 最大步数
 
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
+
 in vec2 screenCoord;
 
-out vec4 FragColor;
+//out vec4 FragColor;
 
 uniform vec3 cameraPos;
 uniform mat4 view;
@@ -151,10 +154,10 @@ void accrectionDisk(vec3 pos, inout vec3 color)
     float outerRadius = 11.0;
 
     float adiskParticle = 1.0; // 1.0
-    float adiskHeight = 0.5; // 0.2
-    float adiskLit = 0.1; // 0.01
-    float adiskDensityV = 2.0; // 1.0
-    float adiskDensityH = 3.0; // 1.0
+    float adiskHeight = 0.2; // 0.2
+    float adiskLit = 1.2; // 0.01
+    float adiskDensityV = 1.0; // 1.0
+    float adiskDensityH = 1.0; // 1.0
     float adiskNoiseScale = 0.8; // 1.0
     float adiskNoiseLOD = 5.0; // 5.0
     float adiskSpeed = 10;
@@ -250,6 +253,9 @@ vec3 RayMarching(Ray ray)
     return color;    
 }
 
+const float brightPassThreshold = 1.0;
+const vec3 luminanceVector = vec3(0.2125, 0.7154, 0.0721);
+
 void main(){
     float u = screenCoord.x * 2.0f - 1.0f;
     float v = screenCoord.y * 2.0f - 1.0f;
@@ -259,4 +265,17 @@ void main(){
     Ray ray = CreateRay(cameraPos, dir);
 
     FragColor = vec4(RayMarching(ray), 1.0);
+
+    vec4 c = FragColor;
+    float luminance = dot(luminanceVector, c.xyz);
+    luminance = max(0.0, luminance - brightPassThreshold);
+    c.xyz *= sign(luminance);
+    BrightColor = vec4(c.xyz, 1.0);
+
+    // check whether result is higher than some threshold, if so, output as bloom threshold color
+    /*float brightness = dot(FragColor.xyz, vec3(0.2126, 0.7152, 0.0722));
+    if(brightness > 1.0)
+        BrightColor = vec4(FragColor.xyz, 1.0);
+    else
+        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);*/
 }
