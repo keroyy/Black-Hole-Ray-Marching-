@@ -32,11 +32,13 @@ GLuint loadTexture(const GLchar* path);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void Do_Movement();
 
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 15.0f));
 bool keys[1024];
+bool buttons[1024];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
 
@@ -62,6 +64,7 @@ int main()
     // Set the required callback functions
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
     // Options
@@ -427,6 +430,7 @@ void Do_Movement()
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (keys[GLFW_KEY_D])
         camera.ProcessKeyboard(RIGHT, deltaTime);
+
 }
 
 // Is called whenever a key is pressed/released via GLFW
@@ -450,6 +454,15 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+        buttons[button] = true;
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+        buttons[button] = false;
+
+}
+
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (firstMouse)
@@ -470,10 +483,11 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     float theta = 2 * PI * ( (GLfloat)xoffset / screenWidth );
     float alpha = 2 * PI * ( (GLfloat)yoffset / screenHeight );
 
-    camera.RotateAxisY(theta);
-    camera.RotateAxisX(alpha);
-
-    
+    if (buttons[GLFW_MOUSE_BUTTON_RIGHT]) {
+        camera.RotateAxisY(theta);
+        camera.RotateAxisX(-alpha);
+    }
+   
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
