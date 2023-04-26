@@ -14,15 +14,15 @@ uniform sampler2D colorMap;
 uniform float time;
 
 // parameters
-uniform bool adiskEnabled;
-uniform float adiskParticle;
-uniform float adiskHeight;
-uniform float adiskLit;
-uniform float adiskDensityV;
-uniform float adiskDensityH;
-uniform float adiskNoiseScale;
-uniform float adiskNoiseLOD;
-uniform float adiskSpeed;
+uniform bool adiskEnabled = true;
+uniform float adiskParticle = 1.0;
+uniform float adiskHeight = 0.2;
+uniform float adiskLit = 0.5;
+uniform float adiskDensityV = 1.0;
+uniform float adiskDensityH = 1.0;
+uniform float adiskNoiseScale = 1.0;
+uniform float adiskNoiseLOD = 5.0;
+uniform float adiskSpeed = 0.5;
 
 // π‚œﬂ
 struct Ray{

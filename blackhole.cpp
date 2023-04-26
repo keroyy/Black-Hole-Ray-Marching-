@@ -62,6 +62,9 @@ float adiskSpeed = 0.5;
 
 bool adiskEnabled = true;
 bool bloom = true;
+float gamma = 2.2;
+float tone = 1.0;
+float bloomStrength = 0.1;
 
 // The MAIN function, from here we start our application and run our Game loop
 int main()
@@ -369,6 +372,9 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
         glUniform1i(glGetUniformLocation(bloomShader.Program, "bloom"), bloom);
+        glUniform1i(glGetUniformLocation(bloomShader.Program, "gamma"), gamma);
+        glUniform1i(glGetUniformLocation(bloomShader.Program, "tone"), tone);
+        glUniform1i(glGetUniformLocation(bloomShader.Program, "bloomStrength"), bloomStrength);
 
         glBindVertexArray(rayVAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -394,9 +400,11 @@ int main()
 
             ImGui::Text("Bloom");
             ImGui::Checkbox("bloom", &bloom);
-
+            ImGui::SliderFloat("tone", &tone, 0.0f, 5.0f);
+            ImGui::SliderFloat("bloomStrength", &bloomStrength, 0.0f, 1.0f);
+            ImGui::SliderFloat("gamma", &gamma, 0.0f, 5.0f);
             
-            ImGui::SameLine();
+            //ImGui::SameLine();
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         }
