@@ -6,15 +6,23 @@ layout (location = 1) out vec4 BrightColor;
 
 in vec2 screenCoord;
 
-//out vec4 FragColor;
-
 uniform vec3 cameraPos;
 uniform mat4 view;
 uniform mat4 projection;
-uniform mat4 rotate;
 uniform samplerCube skybox;
 uniform sampler2D colorMap;
 uniform float time;
+
+// parameters
+uniform bool adiskEnabled;
+uniform float adiskParticle;
+uniform float adiskHeight;
+uniform float adiskLit;
+uniform float adiskDensityV;
+uniform float adiskDensityH;
+uniform float adiskNoiseScale;
+uniform float adiskNoiseLOD;
+uniform float adiskSpeed;
 
 // 光线
 struct Ray{
@@ -153,15 +161,6 @@ void accrectionDisk(vec3 pos, inout vec3 color)
     float innerRadius = 2.6; // 由于引力透镜效应，黑色边缘其实是事件视界的一个投影，它的半径刚好是2.6倍的史瓦西半径
     float outerRadius = 11.0;
 
-    float adiskParticle = 1.0; // 1.0
-    float adiskHeight = 0.2; // 0.2
-    float adiskLit = 1.2; // 0.01
-    float adiskDensityV = 1.0; // 1.0
-    float adiskDensityH = 1.0; // 1.0
-    float adiskNoiseScale = 0.8; // 1.0
-    float adiskNoiseLOD = 5.0; // 5.0
-    float adiskSpeed = 10;
-
     vec3 disk = vec3(outerRadius, adiskHeight, outerRadius); // 视作一个很扁的椭球形
 
     // Density linearly decreases as the distance to the blackhole center
@@ -237,7 +236,8 @@ vec3 RayMarching(Ray ray)
         }
 
         // 吸积盘
-        accrectionDisk(pos, color);
+        if(adiskEnabled)
+            accrectionDisk(pos, color);
 
         // 引力透镜
         vec3 offset = gravitationalLensing(h2, pos);

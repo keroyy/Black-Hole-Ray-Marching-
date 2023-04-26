@@ -17,6 +17,11 @@
 #include <SOIL/SOIL.h>
 #include <hdrloader.h>
 
+// imGui
+#include "imgui.h"
+#include "imgui_impl_glfw_gl3.h"
+#include <stdio.h>
+
 // Other includes
 #include "Shader.h"
 #include "Camera.h"
@@ -45,8 +50,18 @@ bool firstMouse = true;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
+// parameters
+float adiskParticle = 1.0;
+float adiskHeight = 0.2;
+float adiskLit = 0.5;
+float adiskDensityV = 1.0;
+float adiskDensityH = 1.0;
+float adiskNoiseScale = 1.0;
+float adiskNoiseLOD = 5.0;
+float adiskSpeed = 0.5;
+
+bool adiskEnabled = true;
 bool bloom = true;
-bool bloomKeyPressed = false;
 
 // The MAIN function, from here we start our application and run our Game loop
 int main()
@@ -68,7 +83,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // Options
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // Initialize GLEW to setup the OpenGL Function pointers
     glewExperimental = GL_TRUE;
@@ -244,6 +259,11 @@ int main()
     glUniform1i(glGetUniformLocation(bloomShader.Program, "scene"), 0);
     glUniform1i(glGetUniformLocation(bloomShader.Program, "bloomBlur"), 1);
 
+    // imgui
+    ImGui::CreateContext();
+    ImGui_ImplGlfwGL3_Init(window, true);
+    ImGui::StyleColorsDark();
+
 #pragma endregion
 
     // Game loop
@@ -255,12 +275,15 @@ int main()
         lastFrame = currentFrame;
 
         // Check and call events
-        glfwPollEvents();
+        //glfwPollEvents();
         //Do_Movement();
 
         // Clear the colorbuffer
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // imgui
+        ImGui_ImplGlfwGL3_NewFrame();
 
         // 1.render scene into floating point framebuffer
         // ---------------------------------------------
@@ -287,6 +310,17 @@ int main()
 
         glUniform1f(glGetUniformLocation(blackHoleShader.Program, "time"), (GLfloat)glfwGetTime() * 0.03f);
         glUniform3f(glGetUniformLocation(blackHoleShader.Program, "cameraPos"), camera.Position.x, camera.Position.y, camera.Position.z);
+
+        // paramemters
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskEnabled"), adiskEnabled);
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskParticle"), adiskParticle);
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskHeight"), adiskHeight);
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskLit"), adiskLit);
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskDensityV"), adiskDensityV);
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskDensityH"), adiskDensityH);
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskNoiseScale"), adiskNoiseScale);
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskNoiseLOD"), adiskNoiseLOD);
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskSpeed"), adiskSpeed);
         
         // skybox cubeTexture
         glActiveTexture(GL_TEXTURE0);
@@ -340,9 +374,39 @@ int main()
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
+        // imgui
+        bool show_demo_window = true;
+        bool show_another_window = false;
+        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+        {
+            ImGui::Text("AccrectionDisk");                           // Display some text (you can use a format string too)
+            ImGui::Checkbox("enabledAdisk", &adiskEnabled);
+            ImGui::SliderFloat("adiskParticle", &adiskParticle, 0.0f, 5.0f);            // Edit 1 float using a slider from 0.0f to 1.0f   
+            ImGui::SliderFloat("adiskHeight", &adiskHeight, 0.0f, 1.0f);
+            ImGui::SliderFloat("adiskLit", &adiskLit, 0.0f, 2.0f);
+            ImGui::SliderFloat("adiskDensityV", &adiskDensityV, 0.0f, 10.0f);
+            ImGui::SliderFloat("adiskDensityH", &adiskDensityH, 0.0f, 10.0f);
+            ImGui::SliderFloat("adiskNoiseScale", &adiskNoiseScale, 0.0f, 5.0f);
+            ImGui::SliderFloat("adiskNoiseLOD", &adiskNoiseLOD, 0.0f, 10.0f);
+            ImGui::SliderFloat("adiskSpeed", &adiskSpeed, 0.0f, 1.0f);
+            //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+            ImGui::Text("Bloom");
+            ImGui::Checkbox("bloom", &bloom);
+
+            
+            ImGui::SameLine();
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        }
+
+        ImGui::Render();
+        ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Swap the buffers
         glfwSwapBuffers(window);
+        glfwPollEvents();
     }
 
     // Clean up
@@ -350,6 +414,9 @@ int main()
     glDeleteBuffers(1, &skyboxVBO);
     glDeleteVertexArrays(1, &rayVAO);
     glDeleteBuffers(1, &rayEBO);
+    // imgui
+    ImGui_ImplGlfwGL3_Shutdown();
+    ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;
@@ -443,15 +510,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         keys[key] = true;
     else if (action == GLFW_RELEASE)
         keys[key] = false;
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !bloomKeyPressed)
-    {
-        bloom = !bloom;
-        bloomKeyPressed = true;
-    }
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE)
-    {
-        bloomKeyPressed = false;
-    }
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -485,7 +543,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
     if (buttons[GLFW_MOUSE_BUTTON_RIGHT]) {
         camera.RotateAxisY(theta);
-        camera.RotateAxisX(-alpha);
+        camera.RotateAxisX(alpha);
     }
    
 }
