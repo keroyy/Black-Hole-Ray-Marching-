@@ -5,7 +5,10 @@ in vec2 screenCoord;
 
 uniform sampler2D scene;
 uniform sampler2D bloomBlur;
+
 uniform bool bloom;
+uniform bool tonemapping;
+uniform bool gammaCorrection;
 //uniform float exposure;
 uniform float gamma = 2.2;
 uniform float tone = 1.0;
@@ -32,11 +35,13 @@ void main()
     // tone mapping
     //float exposure = 0.6;
     //vec3 result = vec3(1.0) - exp(-hdrColor * exposure);
-    
+    vec3 result = hdrColor;
     // ACES filmic tone mapping
-    vec3 result = aces(hdrColor);
+    if(tonemapping)
+        result = aces(hdrColor);
 
-    // also gamma correct while we're at it       
-    result = pow(result, vec3(1.0 / gamma));
+    // also gamma correct while we're at it     
+    if(gammaCorrection)
+        result = pow(result, vec3(1.0 / gamma));
     FragColor = vec4(result, 1.0);
 }

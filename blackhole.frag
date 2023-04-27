@@ -15,14 +15,14 @@ uniform float time;
 
 // parameters
 uniform bool adiskEnabled = true;
-uniform float adiskParticle = 1.0;
-uniform float adiskHeight = 0.2;
-uniform float adiskLit = 0.5;
-uniform float adiskDensityV = 1.0;
-uniform float adiskDensityH = 1.0;
-uniform float adiskNoiseScale = 1.0;
-uniform float adiskNoiseLOD = 5.0;
-uniform float adiskSpeed = 0.5;
+uniform float adiskParticle;
+uniform float adiskHeight;
+uniform float adiskLit;
+uniform float adiskDensityV;
+uniform float adiskDensityH;
+uniform float adiskNoiseScale;
+uniform float adiskNoiseLOD;
+uniform float adiskSpeed;
 
 // π‚œﬂ
 struct Ray{
@@ -247,7 +247,7 @@ vec3 RayMarching(Ray ray)
         pos += dir;
     }
     // sample skybox
-    dir = rotateVec3(dir, vec3(0, 1, 0), time);
+    dir = rotateVec3(dir, vec3(0, 1, 0), time * 0.3);
     color += vec3(texture(skybox, dir));
                      
     return color;    

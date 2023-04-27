@@ -52,16 +52,18 @@ GLfloat lastFrame = 0.0f;
 
 // parameters
 float adiskParticle = 1.0;
-float adiskHeight = 0.2;
-float adiskLit = 0.5;
-float adiskDensityV = 1.0;
-float adiskDensityH = 1.0;
-float adiskNoiseScale = 1.0;
+float adiskHeight = 0.5;
+float adiskLit = 2.0;
+float adiskDensityV = 1.6;
+float adiskDensityH = 3.0;
+float adiskNoiseScale = 0.6;
 float adiskNoiseLOD = 5.0;
-float adiskSpeed = 0.5;
+float adiskSpeed = 2.0;
 
 bool adiskEnabled = true;
 bool bloom = true;
+bool tonemapping = true;
+bool gammaCorrection = true;
 float gamma = 2.2;
 float tone = 1.0;
 float bloomStrength = 0.1;
@@ -311,7 +313,7 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(blackHoleShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(glGetUniformLocation(blackHoleShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "time"), (GLfloat)glfwGetTime() * 0.03f);
+        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "time"), (GLfloat)glfwGetTime() * 0.1f);
         glUniform3f(glGetUniformLocation(blackHoleShader.Program, "cameraPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 
         // paramemters
@@ -349,6 +351,8 @@ int main()
         {
             glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
             glUniform1i(glGetUniformLocation(blurShader.Program, "horizontal"), horizontal);
+            glUniform1i(glGetUniformLocation(blurShader.Program, "tone"), tone);
+            glUniform1i(glGetUniformLocation(blurShader.Program, "bloomStrength"), bloomStrength);
             glBindTexture(
                 GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]
             );
@@ -372,36 +376,36 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
         glUniform1i(glGetUniformLocation(bloomShader.Program, "bloom"), bloom);
+        glUniform1i(glGetUniformLocation(bloomShader.Program, "tonemapping"), tonemapping);
+        glUniform1i(glGetUniformLocation(bloomShader.Program, "gammaCorrection"), gammaCorrection);
         glUniform1i(glGetUniformLocation(bloomShader.Program, "gamma"), gamma);
-        glUniform1i(glGetUniformLocation(bloomShader.Program, "tone"), tone);
-        glUniform1i(glGetUniformLocation(bloomShader.Program, "bloomStrength"), bloomStrength);
 
         glBindVertexArray(rayVAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
         // imgui
-        bool show_demo_window = true;
-        bool show_another_window = false;
         ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
         {
-            ImGui::Text("AccrectionDisk");                           // Display some text (you can use a format string too)
+            //ImGui::Text("AccrectionDisk");                           // Display some text (you can use a format string too)
             ImGui::Checkbox("enabledAdisk", &adiskEnabled);
             ImGui::SliderFloat("adiskParticle", &adiskParticle, 0.0f, 5.0f);            // Edit 1 float using a slider from 0.0f to 1.0f   
             ImGui::SliderFloat("adiskHeight", &adiskHeight, 0.0f, 1.0f);
-            ImGui::SliderFloat("adiskLit", &adiskLit, 0.0f, 2.0f);
+            ImGui::SliderFloat("adiskLit", &adiskLit, 0.0f, 20.0f);
             ImGui::SliderFloat("adiskDensityV", &adiskDensityV, 0.0f, 10.0f);
             ImGui::SliderFloat("adiskDensityH", &adiskDensityH, 0.0f, 10.0f);
-            ImGui::SliderFloat("adiskNoiseScale", &adiskNoiseScale, 0.0f, 5.0f);
+            ImGui::SliderFloat("adiskNoiseScale", &adiskNoiseScale, 0.0f, 10.0f);
             ImGui::SliderFloat("adiskNoiseLOD", &adiskNoiseLOD, 0.0f, 10.0f);
-            ImGui::SliderFloat("adiskSpeed", &adiskSpeed, 0.0f, 1.0f);
+            ImGui::SliderFloat("adiskSpeed", &adiskSpeed, 0.0f, 10.0f);
             //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-            ImGui::Text("Bloom");
-            ImGui::Checkbox("bloom", &bloom);
-            ImGui::SliderFloat("tone", &tone, 0.0f, 5.0f);
-            ImGui::SliderFloat("bloomStrength", &bloomStrength, 0.0f, 1.0f);
+            ImGui::Checkbox("Bloom", &bloom);
+            ImGui::SliderFloat("tone", &tone, 0.0f, 10.0f);
+            ImGui::SliderFloat("bloomStrength", &bloomStrength, 0.0f, 5.0f);
+            ImGui::Checkbox("tone mapping", &tonemapping);
+            ImGui::Checkbox("gamma correction", &gammaCorrection);
+            
             ImGui::SliderFloat("gamma", &gamma, 0.0f, 5.0f);
             
             //ImGui::SameLine();
@@ -452,7 +456,7 @@ GLuint loadCubemap(vector<const GLchar*> faces)
     {
         image = SOIL_load_image(faces[i], &width, &height, 0, SOIL_LOAD_RGB);
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
-            GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            GL_RGB16F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
     }
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -474,7 +478,7 @@ GLuint loadTexture(const GLchar* path)
     if (data)
     {
         glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
