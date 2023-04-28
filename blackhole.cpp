@@ -52,12 +52,12 @@ GLfloat lastFrame = 0.0f;
 
 // parameters
 float adiskParticle = 1.0;
-float adiskHeight = 0.5;
+float adiskHeight = 0.25;
 float adiskLit = 2.0;
-float adiskDensityV = 1.6;
-float adiskDensityH = 3.0;
+float adiskDensityV = 1.5;
+float adiskDensityH = 3.4;
 float adiskNoiseScale = 0.6;
-float adiskNoiseLOD = 5.0;
+float adiskNoiseLOD = 8.7;
 float adiskSpeed = 2.0;
 
 bool adiskEnabled = true;
@@ -66,7 +66,7 @@ bool tonemapping = true;
 bool gammaCorrection = true;
 float gamma = 2.2;
 float tone = 1.0;
-float bloomStrength = 0.1;
+float bloomStrength = 0.5;
 
 // The MAIN function, from here we start our application and run our Game loop
 int main()
@@ -245,7 +245,7 @@ int main()
     {
         glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
         glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
@@ -259,7 +259,7 @@ int main()
     // shader configuration
     // --------------------
     blurShader.Use();
-    glUniform1i(glGetUniformLocation(blurShader.Program, "image"), 0);
+    glUniform1i(glGetUniformLocation(blurShader.Program, "image"), 1);
     bloomShader.Use();
     glUniform1i(glGetUniformLocation(bloomShader.Program, "scene"), 0);
     glUniform1i(glGetUniformLocation(bloomShader.Program, "bloomBlur"), 1);
@@ -288,7 +288,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // imgui
-        ImGui_ImplGlfwGL3_NewFrame();
+        ImGui_ImplGlfwGL3_NewFrame(); 
 
         // 1.render scene into floating point framebuffer
         // ---------------------------------------------
@@ -317,7 +317,7 @@ int main()
         glUniform3f(glGetUniformLocation(blackHoleShader.Program, "cameraPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 
         // paramemters
-        glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskEnabled"), adiskEnabled);
+        glUniform1i(glGetUniformLocation(blackHoleShader.Program, "adiskEnabled"), adiskEnabled);
         glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskParticle"), adiskParticle);
         glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskHeight"), adiskHeight);
         glUniform1f(glGetUniformLocation(blackHoleShader.Program, "adiskLit"), adiskLit);
@@ -348,11 +348,9 @@ int main()
         GLuint amount = 10;
         blurShader.Use();
         for (GLuint i = 0; i < amount; i++)
-        {
+        {  
             glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
             glUniform1i(glGetUniformLocation(blurShader.Program, "horizontal"), horizontal);
-            glUniform1i(glGetUniformLocation(blurShader.Program, "tone"), tone);
-            glUniform1i(glGetUniformLocation(blurShader.Program, "bloomStrength"), bloomStrength);
             glBindTexture(
                 GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]
             );
@@ -378,7 +376,9 @@ int main()
         glUniform1i(glGetUniformLocation(bloomShader.Program, "bloom"), bloom);
         glUniform1i(glGetUniformLocation(bloomShader.Program, "tonemapping"), tonemapping);
         glUniform1i(glGetUniformLocation(bloomShader.Program, "gammaCorrection"), gammaCorrection);
-        glUniform1i(glGetUniformLocation(bloomShader.Program, "gamma"), gamma);
+        glUniform1f(glGetUniformLocation(bloomShader.Program, "gamma"), gamma);
+        glUniform1f(glGetUniformLocation(bloomShader.Program, "tone"), tone);
+        glUniform1f(glGetUniformLocation(bloomShader.Program, "bloomStrength"), bloomStrength);
 
         glBindVertexArray(rayVAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -434,6 +434,7 @@ int main()
     return 0;
 }
 
+#pragma region "Load texture"
 // Loads a cubemap texture from 6 individual texture faces
 // Order should be:
 // +X (right)
@@ -456,7 +457,7 @@ GLuint loadCubemap(vector<const GLchar*> faces)
     {
         image = SOIL_load_image(faces[i], &width, &height, 0, SOIL_LOAD_RGB);
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
-            GL_RGB16F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            GL_SRGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
     }
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -478,7 +479,7 @@ GLuint loadTexture(const GLchar* path)
     if (data)
     {
         glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -494,6 +495,7 @@ GLuint loadTexture(const GLchar* path)
 
     return textureID;
 }
+#pragma endregion
 
 #pragma region "User input"
 

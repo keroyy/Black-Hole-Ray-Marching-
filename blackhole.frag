@@ -14,7 +14,7 @@ uniform sampler2D colorMap;
 uniform float time;
 
 // parameters
-uniform bool adiskEnabled = true;
+uniform bool adiskEnabled;
 uniform float adiskParticle;
 uniform float adiskHeight;
 uniform float adiskLit;

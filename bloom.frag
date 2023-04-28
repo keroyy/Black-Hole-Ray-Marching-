@@ -29,16 +29,16 @@ void main()
 {             
     vec3 hdrColor = texture(scene, screenCoord).rgb; 
     vec3 bloomColor = texture(bloomBlur, screenCoord).rgb;
+    vec3 result = hdrColor;
     if(bloom)
-        hdrColor = hdrColor * tone + bloomColor * bloomStrength; // additive blending
+        result = hdrColor * tone + bloomColor * bloomStrength; // additive blending
 
     // tone mapping
     //float exposure = 0.6;
     //vec3 result = vec3(1.0) - exp(-hdrColor * exposure);
-    vec3 result = hdrColor;
     // ACES filmic tone mapping
     if(tonemapping)
-        result = aces(hdrColor);
+        result = aces(result);
 
     // also gamma correct while we're at it     
     if(gammaCorrection)
